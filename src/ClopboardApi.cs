@@ -5,31 +5,30 @@ namespace Gizmo.Web.JSInterop;
 public class ClipboardApi(IJSRuntime jsRuntime)
 {
     private const string NAMESPACE = "GizmoWebJSInterop.Clipboard";
-    private readonly IJSRuntime _jsRuntime = jsRuntime;
 
     /// <summary>
     /// Checks if read permission is available
     /// </summary>
     /// <returns>True if read permission is available or may be prompted</returns>
-    public ValueTask<bool> CanRead() => _jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanRead");
+    public ValueTask<bool> CanRead() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanRead");
 
     /// <summary>
     /// Checks if write permission is available
     /// </summary>
     /// <returns>True if write permission is available or may be prompted</returns>
-    public ValueTask<bool> CanWrite() => _jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanWrite");
+    public ValueTask<bool> CanWrite() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanWrite");
 
     /// <summary>
     /// Reads text data from the clipboard
     /// </summary>
     /// <returns>Text content from the clipboard</returns>
-    public ValueTask<string> ReadText() => _jsRuntime.InvokeAsync<string>($"{NAMESPACE}.ReadText");
+    public ValueTask<string> ReadText() => jsRuntime.InvokeAsync<string>($"{NAMESPACE}.ReadText");
 
     /// <summary>
     /// Writes text data to the clipboard
     /// </summary>
     /// <param name="text">The text to write to clipboard</param>
-    public ValueTask WriteText(string text) => _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteText", text);
+    public ValueTask WriteText(string text) => jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteText", text);
 
     /// <summary>
     /// Reads image data from the clipboard
@@ -39,7 +38,7 @@ public class ClipboardApi(IJSRuntime jsRuntime)
     {
         try
         {
-            var imageReference = await _jsRuntime.InvokeAsync<IJSObjectReference>($"{NAMESPACE}.ReadImage");
+            var imageReference = await jsRuntime.InvokeAsync<IJSObjectReference>($"{NAMESPACE}.ReadImage");
 
             if (imageReference == null)
                 return null;
@@ -59,11 +58,11 @@ public class ClipboardApi(IJSRuntime jsRuntime)
     /// <param name="mimeType">The MIME type of the image (default: image/png)</param>
     public async ValueTask WriteImage(byte[] imageData, string mimeType = "image/png")
     {
-        var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+        var imageArray = await jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
 
-        var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
+        var blob = await jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
         
-        await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteImage", blob);
+        await jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteImage", blob);
     }
 
     /// <summary>
@@ -74,10 +73,10 @@ public class ClipboardApi(IJSRuntime jsRuntime)
     /// <param name="mimeType">The MIME type of the image (default: image/png)</param>
     public async ValueTask WriteMultiple(string text, byte[] imageData, string mimeType = "image/png")
     {
-        var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+        var imageArray = await jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
 
-        var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
+        var blob = await jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
         
-        await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteMultiple", text, blob);
+        await jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteMultiple", text, blob);
     }
 }
