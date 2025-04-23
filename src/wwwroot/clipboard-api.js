@@ -76,8 +76,7 @@ class Clipboard {
         // Check for common image types
         for (const type of ['image/png', 'image/jpeg', 'image/gif', 'image/webp']) {
           if (item.types.includes(type)) {
-            const blob = await item.getType(type);
-            return blob;
+            return await item.getType(type);
           }
         }
       }

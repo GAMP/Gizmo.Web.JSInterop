@@ -40,10 +40,11 @@ public class ClipboardApi(IJSRuntime jsRuntime)
         try
         {
             var imageReference = await _jsRuntime.InvokeAsync<IJSObjectReference>($"{NAMESPACE}.ReadImage");
+
             if (imageReference == null)
                 return null;
-                
-            return await imageReference.InvokeAsync<byte[]>("arrayBuffer").AsTask();
+
+            return await imageReference.InvokeAsync<byte[]>("arrayBuffer");
         }
         catch
         {
@@ -59,6 +60,7 @@ public class ClipboardApi(IJSRuntime jsRuntime)
     public async ValueTask WriteImage(byte[] imageData, string mimeType = "image/png")
     {
         var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+
         var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
         
         await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteImage", blob);
@@ -73,6 +75,7 @@ public class ClipboardApi(IJSRuntime jsRuntime)
     public async ValueTask WriteMultiple(string text, byte[] imageData, string mimeType = "image/png")
     {
         var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+
         var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
         
         await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteMultiple", text, blob);
