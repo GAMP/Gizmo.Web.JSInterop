@@ -1,5 +1,18 @@
 # Gizmo.Web.JSInterop
+# Gizmo.Web.JSInterop
 
+A JavaScript interop library for Blazor applications that provides seamless clipboard access functionality.
+
+## Features
+
+- Read and write text to/from clipboard
+- Read and write images to/from clipboard
+- Check clipboard permissions
+- Multi-item clipboard operations
+
+## Installation
+
+Install the package from NuGet:
 A .NET library providing JavaScript interoperability functions for Blazor applications.
 
 ## Features

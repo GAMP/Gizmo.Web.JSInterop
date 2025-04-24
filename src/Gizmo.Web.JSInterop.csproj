@@ -5,10 +5,30 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>Gizmo.Web.JSInterop</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Gizmo Team</Authors>
+    <Company>Gizmo</Company>
+    <Description>JavaScript interop library for Blazor applications providing clipboard functionality</Description>
+    <PackageTags>blazor;jsinterop;clipboard</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/GAMP/Gizmo.Web.JSInterop</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    
+    <!-- XML Documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
