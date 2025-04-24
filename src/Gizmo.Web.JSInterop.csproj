@@ -5,18 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <EnableDefaultContentItems>false</EnableDefaultContentItems>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="wwwroot\**\*.js">
-      <Pack>true</Pack>
-      <PackagePath>staticwebassets</PackagePath>
-    </Content>
   </ItemGroup>
 
 </Project>
