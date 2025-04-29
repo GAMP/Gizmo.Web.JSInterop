@@ -1,36 +1,13 @@
 # Gizmo.Web.JSInterop
-# Gizmo.Web.JSInterop
 
-A JavaScript interop library for Blazor applications that provides seamless clipboard access functionality.
-
-## Features
-
-- Read and write text to/from clipboard
-- Read and write images to/from clipboard
-- Check clipboard permissions
-- Multi-item clipboard operations
-
-## Installation
-
-Install the package from NuGet:
 A .NET library providing JavaScript interoperability functions for Blazor applications.
 
-## Features
+## Requirements
 
-### Clipboard API
+- .NET 9.0
+- Blazor WebAssembly or Blazor Server
 
-The library provides comprehensive clipboard functionality for Blazor applications:
-
-- Check clipboard read/write permissions
-- Read text from clipboard
-- Write text to clipboard
-- Read images from clipboard
-- Write images to clipboard
-- Write multiple formats (text and image) simultaneously
-
-## Usage
-
-### Installation
+## Installation
 
 Add a reference to the Gizmo.Web.JSInterop package in your Blazor project:
 
@@ -38,52 +15,87 @@ Add a reference to the Gizmo.Web.JSInterop package in your Blazor project:
 dotnet add package Gizmo.Web.JSInterop
 ```
 
-### Register Services
+## Features
 
-In your Blazor application's `Program.cs` or `Startup.cs`:
+### Clipboard API
+
+- **Permission Management**
+  - Check clipboard read permissions
+  - Check clipboard write permissions
+  
+- **Text Operations**
+  - Read text from clipboard
+  - Write text to clipboard
+  
+- **Image Operations**
+  - Read images from clipboard
+  - Write images to clipboard
+  
+- **Advanced Operations**
+  - Write multiple formats (text and image) simultaneously
+
+
+### Usage Examples
+
+#### Basic Clipboard Operations
 
 ```csharp
-builder.Services.AddScoped<Gizmo.Web.JSInterop.ClipboardApi>();
-```
-
-### Import JavaScript
-
-In your `_Imports.razor` or component:
-
-```razor
-@using Gizmo.Web.JSInterop
-```
-
-### Use the Clipboard API
-
-```csharp
-@inject ClipboardApi ClipboardApi
+@inject IJSRuntime jsRuntime
 
 @code {
+    var clipboardApi = new ClipboardApi(jsRuntime);
+    
     private async Task CopyTextToClipboard(string text)
     {
-        if (await ClipboardApi.CanWrite())
+        if (await clipboardApi.CanWrite())
         {
-            await ClipboardApi.WriteText(text);
+            await clipboardApi.WriteText(text);
         }
     }
 
     private async Task<string> GetTextFromClipboard()
     {
-        if (await ClipboardApi.CanRead())
+        if (await clipboardApi.CanRead())
         {
-            return await ClipboardApi.ReadText();
+            return await clipboardApi.ReadText();
         }
         return string.Empty;
     }
 }
 ```
 
-## Requirements
+#### Working with Images
 
-- .NET 9.0
-- Blazor WebAssembly or Blazor Server
+```csharp
+@inject IJSRuntime jsRuntime
 
-## Browser Compatibility
+@code {
+    var clipboardApi = new ClipboardApi(jsRuntime);
+    
+    private async Task CopyImageToClipboard(byte[] imageData)
+    {
+        if (await clipboardApi.CanWrite())
+        {
+            await clipboardApi.WriteImage(imageData, "image/png");
+        }
+    }
+    
+    private async Task<byte[]?> GetImageFromClipboard()
+    {
+        if (await clipboardApi.CanRead())
+        {
+            return await clipboardApi.ReadImage();
+        }
+        return null;
+    }
+}
+```
 
-The Clipboard API relies on the browser's implementation of the Clipboard API. Functionality may vary depending on the browser and security context (HTTPS is generally required for clipboard operations).
+#### Browser Compatibility
+
+The Clipboard API relies on the browser's implementation of the Clipboard API. Functionality may vary depending on:
+- Browser vendor and version
+- Security context (HTTPS is generally required)
+- User permissions and browser settings
+
+Most modern browsers (Chrome, Edge, Firefox, Safari) support the core clipboard functionality, but permission handling may differ between implementations.

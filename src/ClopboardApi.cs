@@ -1,142 +1,94 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace Gizmo.Web.JSInterop;
 
-public class ClipboardApi
+public class ClipboardApi(IJSRuntime jsRuntime)
 {
     private const string NAMESPACE = "GizmoWebJSInterop.Clipboard";
-    
-    private readonly ILogger _logger;
-    private readonly IJSRuntime _jsRuntime;
-
-    public ClipboardApi(ILogger logger, IJSRuntime jsRuntime)
-    {
-        _jsRuntime = jsRuntime;
-        _logger = logger;
-    }
 
     /// <summary>
     /// Checks if read permission is available
     /// </summary>
     /// <returns>True if read permission is available or may be prompted</returns>
-    public async Task<bool> CanRead()
-    {
-        try
-        {
-            return await _jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanRead");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to check clipboard read permission");
-            return false;
-        }
-    }
-
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    public ValueTask<bool> CanRead() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanRead");
+    
     /// <summary>
     /// Checks if write permission is available
     /// </summary>
     /// <returns>True if write permission is available or may be prompted</returns>
-    public async Task<bool> CanWrite()
-    {
-        try
-        {
-            return await _jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanWrite");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to check clipboard write permission");
-            return false;
-        }
-    }
-
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    public ValueTask<bool> CanWrite() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.CanWrite");
+    
     /// <summary>
     /// Reads text data from the clipboard
     /// </summary>
     /// <returns>Text content from the clipboard</returns>
-    public async Task<string> ReadText()
-    {
-        try
-        {
-            return await _jsRuntime.InvokeAsync<string>($"{NAMESPACE}.ReadText");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to read text from clipboard");
-            return string.Empty;
-        }
-    }
-
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error or clipboard permission is denied</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    public ValueTask<string> ReadText() => jsRuntime.InvokeAsync<string>($"{NAMESPACE}.ReadText");
+    
     /// <summary>
     /// Writes text data to the clipboard
     /// </summary>
     /// <param name="text">The text to write to clipboard</param>
-    public async Task WriteText(string text)
-    {
-        try
-        {
-            await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteText", text);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write text to clipboard");
-        }
-    }
-
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error or clipboard permission is denied</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    /// <exception cref="ArgumentNullException">Thrown if text parameter is null</exception>
+    public ValueTask WriteText(string text) => jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteText", text);
+    
     /// <summary>
     /// Reads image data from the clipboard
     /// </summary>
     /// <returns>Image data as byte array or null if no image is available</returns>
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error or clipboard permission is denied</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    /// <exception cref="ArgumentException">Thrown if the clipboard data cannot be converted to a valid image format</exception>
     public async Task<byte[]?> ReadImage()
     {
-        try
-        {
-            var imageReference = await _jsRuntime.InvokeAsync<IJSObjectReference>($"{NAMESPACE}.ReadImage");
-            return await imageReference.InvokeAsync<byte[]>("arrayBuffer");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to read image from clipboard");
-            return null;
-        }
+        var imageReference = await jsRuntime.InvokeAsync<IJSObjectReference>($"{NAMESPACE}.ReadImage");
+        return await imageReference.InvokeAsync<byte[]>("arrayBuffer");
     }
-
+    
     /// <summary>
     /// Writes image data to the clipboard
     /// </summary>
     /// <param name="imageData">The image data as byte array</param>
     /// <param name="mimeType">The MIME type of the image (default: image/png)</param>
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error or clipboard permission is denied</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    /// <exception cref="ArgumentNullException">Thrown if imageData is null</exception>
+    /// <exception cref="ArgumentException">Thrown if imageData is invalid or mimeType is not supported</exception>
     public async Task WriteImage(byte[] imageData, string mimeType = "image/png")
     {
-        try
-        {
-            var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
-            var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
-            await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteImage", blob);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write image to clipboard");
-        }
+        var imageArray = await jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+        var blob = await jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
+        await jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteImage", blob);
     }
-
+    
     /// <summary>
     /// Writes both text and image to the clipboard
     /// </summary>
     /// <param name="text">Text to write to the clipboard</param>
     /// <param name="imageData">The image data as byte array</param>
     /// <param name="mimeType">The MIME type of the image (default: image/png)</param>
+    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error or clipboard permission is denied</exception>
+    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
+    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
+    /// <exception cref="ArgumentNullException">Thrown if text or imageData is null</exception>
+    /// <exception cref="ArgumentException">Thrown if imageData is invalid or mimeType is not supported</exception>
     public async Task WriteMultiple(string text, byte[] imageData, string mimeType = "image/png")
     {
-        try
-        {
-            var imageArray = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
-            var blob = await _jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
-            await _jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteMultiple", text, blob);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to write multiple items to clipboard");
-        }
+        var imageArray = await jsRuntime.InvokeAsync<IJSObjectReference>("new Uint8Array", imageData);
+        var blob = await jsRuntime.InvokeAsync<IJSObjectReference>("new Blob", new[] { imageArray }, new { type = mimeType });
+        await jsRuntime.InvokeVoidAsync($"{NAMESPACE}.WriteMultiple", text, blob);
     }
 }

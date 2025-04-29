@@ -8,10 +8,10 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Gizmo.Web.JSInterop</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Gizmo Team</Authors>
     <Company>Gizmo</Company>
-    <Description>JavaScript interop library for Blazor applications providing clipboard functionality</Description>
+    <Description>JavaScript interop library for Blazor applications providing javascript API</Description>
     <PackageTags>blazor;jsinterop;clipboard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
