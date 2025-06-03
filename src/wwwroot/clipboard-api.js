@@ -85,6 +85,5 @@ class Clipboard {
     }
 }
 
-window.GizmoWebJSInterop = class GizmoWebJSInterop {
-    static Clipboard = Clipboard;
-};
+window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
+window.GizmoWebJSInterop.Clipboard = Clipboard;
