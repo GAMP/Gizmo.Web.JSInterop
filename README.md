@@ -37,13 +37,12 @@ dotnet add package Gizmo.Web.JSInterop
 ### Printer API
 
 - **Element Printing**
-  - Print specific HTML elements using CSS selectors
+  - Print specific HTML elements
   - Print arbitrary HTML content
   
 - **Element Selection**
-  - Interactive element selector tool
-  - Get CSS selector for selected elements
-  - Print selected elements
+  - Interactive element selection
+  - Print selected element
 
 
 ### Usage Examples
@@ -108,21 +107,16 @@ dotnet add package Gizmo.Web.JSInterop
 @inject IJSRuntime jsRuntime
 
 @code {
-    private PrinterApi printerApi;
+    var printerApi = new PrinterApi(jsRuntime);
+    private ElementReference myElement;
     
-    protected override void OnInitialized()
-    {
-        printerApi = new PrinterApi(jsRuntime);
-    }
-    
-    // Print an element by CSS selector
-    private async Task PrintSpecificElement()
+    private async Task PrintElement()
     {
         await printerApi.PrintElement("#my-element");
+        await printerApi.PrintElement(myElement);
     }
     
-    // Print custom HTML content
-    private async Task PrintCustomContent()
+    private async Task PrintElementContent()
     {
         string htmlContent = "<h1>Custom Report</h1><p>This is a test report.</p>";
         await printerApi.PrintElementContent(htmlContent);
@@ -137,16 +131,9 @@ dotnet add package Gizmo.Web.JSInterop
 @page "/element-selector"
 
 <div class="controls">
-    <button @onclick="ActivateSelectionTool">Select Element</button>
-    <button @onclick="DeactivateSelectionTool">Cancel Selection</button>
+    <button @onclick="ActivateSelection">Select Element</button>
+    <button @onclick="DeactivateSelection">Cancel Selection</button>
     <button @onclick="PrintSelectedElement">Print Selected Element</button>
-</div>
-
-<div class="status">
-    @if (!string.IsNullOrEmpty(selectedElementSelector))
-    {
-        <p>Selected element: <code>@selectedElementSelector</code></p>
-    }
 </div>
 
 <div class="content-area">
@@ -167,34 +154,24 @@ dotnet add package Gizmo.Web.JSInterop
 </div>
 
 @code {
-    private PrinterApi printerApi;
-    private string? selectedElementSelector;
+    var printerApi = new PrinterApi(jsRuntime);
     
-    protected override void OnInitialized()
+    private async Task ActivateSelection()
     {
-        printerApi = new PrinterApi(jsRuntime);
-    }
-    
-    private async Task ActivateSelectionTool()
-    {
-        await printerApi.AddSelectionTool(
+        await printerApi.ActivateSelection(
             highlightColor: "rgba(255, 193, 7, 0.3)",
             highlightBorder: "2px dashed #ffc107"
         );
     }
     
-    private async Task DeactivateSelectionTool()
+    private async Task DeactivateSelection()
     {
-        await printerApi.RemoveSelectionTool();
+        await printerApi.DeactivateSelection();
     }
     
     private async Task PrintSelectedElement()
     {
-        selectedElementSelector = await printerApi.GetSelectedElementSelector();
-        if (!string.IsNullOrEmpty(selectedElementSelector))
-        {
-            await printerApi.PrintSelectedElement();
-        }
+        await printerApi.PrintSelectedElement();
     }
 }
 ```
