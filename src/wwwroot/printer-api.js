@@ -8,7 +8,7 @@
         try {
             const element = document.querySelector(selector);
             if (!element) {
-                console.error(`Element not found: ${selector}`);
+                console.error(`Element to print not found: ${selector}`);
                 return false;
             }
             return await this.printElementContent(element.outerHTML);
@@ -26,7 +26,7 @@
     static async printElementByReference(elementRef) {
         try {
             if (!elementRef) {
-                console.error('Invalid element reference');
+                console.error('Invalid printing element reference.');
                 return false;
             }
             return await this.printElementContent(elementRef.outerHTML);
@@ -50,7 +50,7 @@
             iframe.style.height = '0';
             iframe.style.opacity = '0';
             iframe.style.border = 'none';
-            
+
             document.body.appendChild(iframe);
 
             const doc = iframe.contentWindow.document;
@@ -58,7 +58,7 @@
             doc.open();
             doc.write(`
                 <!DOCTYPE html>
-                <html>
+                <html lang="en">
                     <head>
                         <title>Print</title>
                         <style>
@@ -74,13 +74,13 @@
             doc.close();
 
             return new Promise((resolve) => {
-                // Listen for the afterprint event
+
                 iframe.contentWindow.addEventListener('afterprint', () => {
                     document.body.removeChild(iframe);
                     resolve(true);
                 }, {once: true});
 
-                // Fallback if afterprint doesn't fire within 5 seconds
+                // Fallback if afterprint doesn't fire
                 const timeoutId = setTimeout(() => {
                     if (document.body.contains(iframe)) {
                         document.body.removeChild(iframe);
@@ -88,7 +88,6 @@
                     }
                 }, 5000);
 
-                // Wait for content to load, then print
                 iframe.onload = () => {
                     try {
                         iframe.contentWindow.focus();
@@ -110,8 +109,8 @@
         }
     }
 
-    // Element selection tool variables
-    static selectionToolActive = false;
+    // Element selection variables
+    static isSelectionActive = false;
     static selectedElement = null;
     static highlightOverlay = null;
     static selectionEventListeners = [];
@@ -123,8 +122,8 @@
      * @param {string} options.highlightBorder - Border style for highlighting (default: '2px dashed #4a90e2')
      * @returns {boolean} - Whether the tool was successfully added
      */
-    static addSelectionTool(options = {}) {
-        if (this.selectionToolActive) {
+    static activateSelection(options = {}) {
+        if (this.isSelectionActive) {
             return false;
         }
 
@@ -135,7 +134,7 @@
 
         const config = {...defaultOptions, ...options};
 
-        // Create highlight overlay
+        // Create a highlight overlay
         this.highlightOverlay = document.createElement('div');
         this.highlightOverlay.style.position = 'absolute';
         this.highlightOverlay.style.pointerEvents = 'none';
@@ -183,11 +182,6 @@
             return false;
         };
 
-        // Register listeners
-        document.addEventListener('mouseover', handleMouseOver, true);
-        document.addEventListener('mouseout', handleMouseOut, true);
-        document.addEventListener('click', handleClick, true);
-
         // Store listeners for later removal
         this.selectionEventListeners = [
             {type: 'mouseover', handler: handleMouseOver, capture: true},
@@ -195,7 +189,15 @@
             {type: 'click', handler: handleClick, capture: true}
         ];
 
-        this.selectionToolActive = true;
+        this.selectionEventListeners.forEach(listener => {
+            document.addEventListener(
+                listener.type,
+                listener.handler,
+                listener.capture
+            );
+        });
+
+        this.isSelectionActive = true;
         return true;
     }
 
@@ -203,8 +205,8 @@
      * Remove selection tool from the page
      * @returns {boolean} - Whether the tool was successfully removed
      */
-    static removeSelectionTool() {
-        if (!this.selectionToolActive) {
+    static deactivateSelection() {
+        if (!this.isSelectionActive) {
             return false;
         }
 
@@ -224,51 +226,9 @@
 
         this.highlightOverlay = null;
         this.selectionEventListeners = [];
-        this.selectionToolActive = false;
+        this.selectedElement = null;
+        this.isSelectionActive = false;
         return true;
-    }
-
-    /**
-     * Get the CSS selector for the currently selected element
-     * @returns {string|null} - CSS selector or null if no element selected
-     */
-    static getSelectedElementSelector() {
-        if (!this.selectedElement) {
-            return null;
-        }
-
-        // Generate a specific selector for the element
-        let selector = '';
-        let element = this.selectedElement;
-
-        while (element && element !== document.documentElement) {
-            let elementSelector = element.tagName.toLowerCase();
-
-            // Add ID if available
-            if (element.id) {
-                elementSelector += `#${element.id}`;
-            } else {
-                // Add classes if available
-                if (element.className && typeof element.className === 'string') {
-                    elementSelector += `.${element.className.trim().replace(/\s+/g, '.')}`;
-                }
-
-                // Add position among siblings of same type
-                const siblings = Array.from(
-                    element.parentNode.children
-                ).filter(el => el.tagName === element.tagName);
-
-                if (siblings.length > 1) {
-                    const index = siblings.indexOf(element) + 1;
-                    elementSelector += `:nth-of-type(${index})`;
-                }
-            }
-
-            selector = elementSelector + (selector ? ' > ' + selector : '');
-            element = element.parentNode;
-        }
-
-        return selector;
     }
 
     /**
@@ -277,7 +237,7 @@
      */
     static async printSelectedElement() {
         if (!this.selectedElement) {
-            console.error('No element selected');
+            console.error('No element selected for printing.');
             return false;
         }
 

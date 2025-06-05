@@ -74,11 +74,11 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> AddSelectionTool(string? highlightColor = null, string? highlightBorder = null)
+    public ValueTask<bool> ActivateSelection(string? highlightColor = null, string? highlightBorder = null)
     {
-        var options = new { highlightColor = highlightColor, highlightBorder = highlightBorder };
+        var options = new { highlightColor, highlightBorder };
 
-        return jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.addSelectionTool", options);
+        return jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.activateSelection", options);
     }
 
     /// <summary>
@@ -88,16 +88,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> RemoveSelectionTool() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.removeSelectionTool");
-
-    /// <summary>
-    /// Gets the CSS selector for the currently selected element
-    /// </summary>
-    /// <returns>CSS selector string or null if no element is selected</returns>
-    /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
-    /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
-    /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<string?> GetSelectedElementSelector() => jsRuntime.InvokeAsync<string?>($"{NAMESPACE}.getSelectedElementSelector");
+    public ValueTask<bool> DeactivateSelection() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.deactivateSelection");
 
     /// <summary>
     /// Prints the currently selected element
