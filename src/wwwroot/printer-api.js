@@ -111,6 +111,7 @@
 
     // Element selection variables
     static isSelectionActive = false;
+    static isSelectionLocked = false;
     static selectedElement = null;
     static highlightOverlay = null;
     static selectionEventListeners = [];
@@ -146,7 +147,7 @@
 
         // Event handlers
         const handleMouseOver = (event) => {
-            if (event.target === document.body || event.target === document.documentElement) {
+            if (this.isSelectionLocked || event.target === document.body || event.target === document.documentElement) {
                 return;
             }
 
@@ -159,11 +160,14 @@
         };
 
         const handleMouseOut = () => {
+            if (this.isSelectionLocked) {
+                return;
+            }
             this.highlightOverlay.style.display = 'none';
         };
 
         const handleClick = (event) => {
-            if (event.target === document.body || event.target === document.documentElement) {
+            if (this.isSelectionLocked || event.target === document.body || event.target === document.documentElement) {
                 return;
             }
 
@@ -171,13 +175,16 @@
             event.stopPropagation();
             this.selectedElement = event.target;
 
-            // Provide visual feedback of selection
-            const originalBorder = event.target.style.border;
-            event.target.style.border = config.highlightBorder;
+            // Lock the selection
+            this.lockSelection();
 
-            setTimeout(() => {
-                event.target.style.border = originalBorder;
-            }, 500);
+            // Show the highlight overlay permanently for the selected element
+            const rect = this.selectedElement.getBoundingClientRect();
+            this.highlightOverlay.style.display = 'block';
+            this.highlightOverlay.style.top = `${window.scrollY + rect.top}px`;
+            this.highlightOverlay.style.left = `${window.scrollX + rect.left}px`;
+            this.highlightOverlay.style.width = `${rect.width}px`;
+            this.highlightOverlay.style.height = `${rect.height}px`;
 
             return false;
         };
@@ -198,6 +205,33 @@
         });
 
         this.isSelectionActive = true;
+        this.isSelectionLocked = false;
+        return true;
+    }
+
+    /**
+     * Lock the current selection, allowing interaction with other elements
+     * @returns {boolean} - Whether the selection was successfully locked
+     */
+    static lockSelection() {
+        if (!this.isSelectionActive || this.isSelectionLocked) {
+            return false;
+        }
+        
+        this.isSelectionLocked = true;
+        return true;
+    }
+
+    /**
+     * Unlock the current selection, allowing selection of new elements
+     * @returns {boolean} - Whether the selection was successfully unlocked
+     */
+    static unlockSelection() {
+        if (!this.isSelectionActive || !this.isSelectionLocked) {
+            return false;
+        }
+        
+        this.isSelectionLocked = false;
         return true;
     }
 
@@ -228,6 +262,7 @@
         this.selectionEventListeners = [];
         this.selectedElement = null;
         this.isSelectionActive = false;
+        this.isSelectionLocked = false;
         return true;
     }
 
