@@ -11,11 +11,11 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// Prints a specific HTML element identified by a CSS selector
     /// </summary>
     /// <param name="selector">CSS selector for the element to print. To print by ID, use "#elementId". For classes, use ".className". For tag names, use "tagName".</param>
-    /// <returns>True if the element was found and print operation started</returns>
+    /// <returns>True if the element was found and the print operation started</returns>
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> PrintElement(string selector) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.printElementBySelector", selector);
+    public ValueTask<bool> PrintElement(string selector) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.PrintElementBySelector", selector);
 
     /// <summary>
     /// Prints a DOM element by reference
@@ -25,7 +25,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> PrintElement(ElementReference element) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.printElementByReference", element);
+    public ValueTask<bool> PrintElement(ElementReference element) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.PrintElementByReference", element);
 
     /// <summary>
     /// Prints arbitrary HTML content
@@ -35,7 +35,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> PrintElementContent(string content) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.printElementContent", content);
+    public ValueTask<bool> PrintElementContent(string content) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.PrintElementContent", content);
 
     /// <summary>
     /// Prints HTML content from a MarkupString
@@ -45,7 +45,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> PrintElementContent(MarkupString content) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.printElementContent", content.Value);
+    public ValueTask<bool> PrintElementContent(MarkupString content) => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.PrintElementContent", content.Value);
 
     /// <summary>
     /// Activates an interactive element selection tool on the page
@@ -57,7 +57,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
     public ValueTask<bool> ActivateSelection(string? highlightColor = null, string? highlightBorder = null) =>
-        jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.activateSelection", new { highlightColor, highlightBorder });
+        jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.ActivateSelection", new { highlightColor, highlightBorder });
 
     /// <summary>
     /// Deactivates the element selection tool
@@ -66,7 +66,7 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> DeactivateSelection() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.deactivateSelection");
+    public ValueTask<bool> DeactivateSelection() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.DeactivateSelection");
 
     /// <summary>
     /// Prints the currently selected element
@@ -75,5 +75,5 @@ public class PrinterApi(IJSRuntime jsRuntime)
     /// <exception cref="JSException">Thrown when JavaScript interop encounters an error</exception>
     /// <exception cref="JSDisconnectedException">Thrown if the JavaScript runtime is disconnected</exception>
     /// <exception cref="TaskCanceledException">Thrown if the operation is canceled</exception>
-    public ValueTask<bool> PrintSelectedElement() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.printSelectedElement");
+    public ValueTask<bool> PrintSelectedElement() => jsRuntime.InvokeAsync<bool>($"{NAMESPACE}.PrintSelectedElement");
 }

@@ -4,14 +4,14 @@
      * @param {string} selector - CSS selector string
      * @returns {Promise<boolean>} - Success status
      */
-    static async printElementBySelector(selector) {
+    static async PrintElementBySelector(selector) {
         try {
             const element = document.querySelector(selector);
             if (!element) {
                 console.error(`Element to print not found: ${selector}`);
                 return false;
             }
-            return await this.printElementContent(element.outerHTML);
+            return await PrinterUtils.printElement(element);
         } catch (error) {
             console.error('Error printing element by selector:', error);
             return false;
@@ -20,16 +20,17 @@
 
     /**
      * Print a specific HTML element by element reference
-     * @param {Object} elementRef - ElementReference object
+     * @param {Object} element - ElementReference object
      * @returns {Promise<boolean>} - Success status
      */
-    static async printElementByReference(elementRef) {
+    static async PrintElementByReference(element) {
         try {
-            if (!elementRef) {
+            if (!element) {
                 console.error('Invalid printing element reference.');
                 return false;
             }
-            return await this.printElementContent(elementRef.outerHTML);
+            
+            return await PrinterUtils.printElement(element);
         } catch (error) {
             console.error('Error printing element by reference:', error);
             return false;
@@ -41,7 +42,155 @@
      * @param {string} htmlContent - HTML content to print
      * @returns {Promise<boolean>} - Success status
      */
-    static async printElementContent(htmlContent) {
+    static async PrintElementContent(htmlContent) {
+        try {
+            if (!htmlContent) {
+                console.error('Invalid HTML content to print.');
+                return false;
+            }
+
+            // Create a temporary container for the HTML content
+            const element = document.createElement('div');
+            element.style.position = 'fixed';
+            element.style.left = '-9999px';
+            element.style.top = '0';
+            element.style.width = '800px'; // Set width for consistent rendering
+            element.style.backgroundColor = '#ffffff';
+            element.innerHTML = htmlContent.replace(/\x3C!--!-->/g, ''); // Remove Blazor comment markers
+
+            document.body.appendChild(element);
+
+            try {
+                const imgUrl = await PrinterUtils.createImgUrl(element);
+                return await PrinterUtils.printImage(imgUrl);
+            } catch (error) {
+                console.error('Error converting HTML to image:', error);
+            } finally {
+                if( document.body.contains(element)) {
+                    document.body.removeChild(element);
+                }
+            }
+        } catch (error) {
+            console.error('Error preparing content for print:', error);
+        }
+    }
+
+    /**
+     * Add selection tool to the page
+     * @param {Object} options - Configuration options
+     * @param {string} options.highlightColor - Color for highlighting (default: 'rgba(255, 193, 7, 0.3)')
+     * @param {string} options.highlightBorder - Border style for highlighting (default: '2px dashed #ffc107')
+     * @returns {boolean} - Whether the tool was successfully added
+     */
+    static ActivateSelection(options = {}) {
+        if (PrinterUtils.IsSelectionActive) {
+            return false;
+        }
+
+        const defaultOptions = {
+            highlightColor: 'rgba(255, 193, 7, 0.3)',
+            highlightBorder: '2px dashed #ffc107'
+        };
+
+        PrinterUtils.createHighlightOverlay({...defaultOptions, ...options});
+        PrinterUtils.subscribeToSelectionEvents();
+
+        PrinterUtils.IsSelectionActive = true;
+        PrinterUtils.IsSelectionLocked = false;
+        
+        return true;
+    }
+
+    /**
+     * Remove selection tool from the page
+     * @returns {boolean} - Whether the tool was successfully removed
+     */
+    static DeactivateSelection() {
+        if (!PrinterUtils.IsSelectionActive) {
+            return false;
+        }
+
+        PrinterUtils.unsubscribeFromSelectionEvents();
+        PrinterUtils.removeHighlightOverlay();
+        PrinterUtils.unlockSelection();
+        
+        return true;
+    }
+
+    /**
+     * Print the currently selected element as an image
+     * @returns {Promise<boolean>} - Success status
+     */
+    static async PrintSelectedElement() {
+        if (!PrinterUtils.SelectedElement) {
+            console.error('No element selected for printing.');
+            return false;
+        }
+
+        return await PrinterUtils.printElement(PrinterUtils.SelectedElement);
+    }
+}
+
+class PrinterUtils {
+    static IsSelectionActive = false;
+    static IsSelectionLocked = false;
+    static SelectedElement = null;
+    static HighlightOverlay = null;
+    
+    static loadHtml2Canvas() {
+        return new Promise((resolve, reject) => {
+            if (typeof html2canvas !== 'undefined') {
+                resolve();
+            } else {
+                const script = document.createElement('script');
+                script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+                script.onload = resolve;
+                script.onerror = () => reject(new Error('Failed to load html2canvas'));
+                document.head.appendChild(script);
+            }
+        });
+    }
+
+    /**
+     * Capture an element as an image
+     * @param {HTMLElement} element - The element to capture
+     * @returns {Promise<string>} - Data URL of the captured image
+     */
+    static async createImgUrl(element) {
+        if (!element) {
+            throw new Error('Element to capture is undefined');
+        }
+
+        if (element instanceof HTMLCanvasElement) {
+            try {
+                return element.toDataURL('image/png');
+            } catch (e) {
+                console.error('Error capturing canvas:', e);
+                throw e;
+            }
+        }
+
+        try {
+            const canvas = await html2canvas(element, {
+                allowTaint: true,
+                useCORS: true,
+                scale: 2, // Higher scale for better quality
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            return canvas.toDataURL('image/png');
+        } catch (e) {
+            console.error('Error capturing element with html2canvas:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Print an image from a data URL
+     * @param {string} imgUrl - The image data URL
+     * @returns {Promise<boolean>} - Success status
+     */
+    static async printImage(imgUrl) {
         try {
             const iframe = document.createElement('iframe');
 
@@ -63,18 +212,25 @@
                         <title>Print</title>
                         <style>
                             @media print {
-                                html, body { margin: 0; padding: 0; }
-                                @page { margin: 0.5cm; }
-                                * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                body {
+                                    margin: 0;
+                                    padding: 0;
+                                }
+                                img {
+                                    max-width: 100%;
+                                    display: block;
+                                    margin: 0 auto;
+                                }
                             }
                         </style>
                     </head>
-                    <body>${htmlContent}</body>
+                    <body>
+                        <img src="${imgUrl}" alt="Print content" />
+                    </body>
                 </html>`);
             doc.close();
 
             return new Promise((resolve) => {
-
                 iframe.contentWindow.addEventListener('afterprint', () => {
                     document.body.removeChild(iframe);
                     resolve(true);
@@ -90,11 +246,10 @@
 
                 iframe.onload = () => {
                     try {
-                        iframe.contentWindow.focus();
-                        iframe.contentWindow.print();
-
-                        // If print is canceled and afterprint doesn't fire
-                        // The fallback timeout will handle cleanup
+                        setTimeout(() => {
+                            iframe.contentWindow.focus();
+                            iframe.contentWindow.print();
+                        }, 500);
                     } catch (e) {
                         clearTimeout(timeoutId);
                         document.body.removeChild(iframe);
@@ -104,181 +259,143 @@
                 };
             });
         } catch (error) {
-            console.error('Error preparing content for print:', error);
+            console.error('Error preparing image for print:', error);
             return false;
         }
     }
 
-    // Element selection variables
-    static isSelectionActive = false;
-    static isSelectionLocked = false;
-    static selectedElement = null;
-    static highlightOverlay = null;
-    static selectionEventListeners = [];
-
     /**
-     * Add selection tool to the page
-     * @param {Object} options - Configuration options
-     * @param {string} options.highlightColor - Color for highlighting (default: 'rgba(74, 144, 226, 0.3)')
-     * @param {string} options.highlightBorder - Border style for highlighting (default: '2px dashed #4a90e2')
-     * @returns {boolean} - Whether the tool was successfully added
+     * Print an element as an image
+     * @param {HTMLElement} element - The element to print
+     * @returns {Promise<boolean>} - Success status
      */
-    static activateSelection(options = {}) {
-        if (this.isSelectionActive) {
+    static async printElement(element) {
+        try {
+            if (!element) {
+                console.error('Invalid element to print.');
+                return false;
+            }
+
+            const imgUrl = await this.createImgUrl(element);
+            return await this.printImage(imgUrl);
+        } catch (error) {
+            console.error('Error printing element as image:', error);
             return false;
         }
-
-        const defaultOptions = {
-            highlightColor: 'rgba(74, 144, 226, 0.3)',
-            highlightBorder: '2px dashed #4a90e2'
-        };
-
-        const config = {...defaultOptions, ...options};
-
-        // Create a highlight overlay
-        this.highlightOverlay = document.createElement('div');
-        this.highlightOverlay.style.position = 'absolute';
-        this.highlightOverlay.style.pointerEvents = 'none';
-        this.highlightOverlay.style.backgroundColor = config.highlightColor;
-        this.highlightOverlay.style.border = config.highlightBorder;
-        this.highlightOverlay.style.zIndex = '10000';
-        this.highlightOverlay.style.display = 'none';
-        document.body.appendChild(this.highlightOverlay);
-
-        // Event handlers
-        const handleMouseOver = (event) => {
-            if (this.isSelectionLocked || event.target === document.body || event.target === document.documentElement) {
-                return;
-            }
-
-            const rect = event.target.getBoundingClientRect();
-            this.highlightOverlay.style.display = 'block';
-            this.highlightOverlay.style.top = `${window.scrollY + rect.top}px`;
-            this.highlightOverlay.style.left = `${window.scrollX + rect.left}px`;
-            this.highlightOverlay.style.width = `${rect.width}px`;
-            this.highlightOverlay.style.height = `${rect.height}px`;
-        };
-
-        const handleMouseOut = () => {
-            if (this.isSelectionLocked) {
-                return;
-            }
-            this.highlightOverlay.style.display = 'none';
-        };
-
-        const handleClick = (event) => {
-            if (this.isSelectionLocked || event.target === document.body || event.target === document.documentElement) {
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-            this.selectedElement = event.target;
-
-            // Lock the selection
-            this.lockSelection();
-
-            // Show the highlight overlay permanently for the selected element
-            const rect = this.selectedElement.getBoundingClientRect();
-            this.highlightOverlay.style.display = 'block';
-            this.highlightOverlay.style.top = `${window.scrollY + rect.top}px`;
-            this.highlightOverlay.style.left = `${window.scrollX + rect.left}px`;
-            this.highlightOverlay.style.width = `${rect.width}px`;
-            this.highlightOverlay.style.height = `${rect.height}px`;
-
-            return false;
-        };
-
-        // Store listeners for later removal
-        this.selectionEventListeners = [
-            {type: 'mouseover', handler: handleMouseOver, capture: true},
-            {type: 'mouseout', handler: handleMouseOut, capture: true},
-            {type: 'click', handler: handleClick, capture: true}
-        ];
-
-        this.selectionEventListeners.forEach(listener => {
-            document.addEventListener(
-                listener.type,
-                listener.handler,
-                listener.capture
-            );
-        });
-
-        this.isSelectionActive = true;
-        this.isSelectionLocked = false;
-        return true;
     }
 
     /**
      * Lock the current selection, allowing interaction with other elements
      * @returns {boolean} - Whether the selection was successfully locked
      */
-    static lockSelection() {
-        if (!this.isSelectionActive || this.isSelectionLocked) {
+    static lockSelection(element) {
+        if (!this.IsSelectionActive || this.IsSelectionLocked) {
             return false;
         }
-        
-        this.isSelectionLocked = true;
+
+        this.SelectedElement = element;
+        this.IsSelectionLocked = true;
         return true;
     }
 
     /**
      * Unlock the current selection, allowing selection of new elements
-     * @returns {boolean} - Whether the selection was successfully unlocked
+     * @returns {void} 
      */
     static unlockSelection() {
-        if (!this.isSelectionActive || !this.isSelectionLocked) {
-            return false;
-        }
+        this.IsSelectionLocked = false;
+        this.IsSelectionActive = false;
+        this.SelectedElement = null;
+    }
+    
+    static createHighlightOverlay (config) {
         
-        this.isSelectionLocked = false;
-        return true;
+        const highlightOverlay = document.createElement('div');
+        highlightOverlay.style.position = 'absolute';
+        highlightOverlay.style.pointerEvents = 'none';
+        highlightOverlay.style.backgroundColor = config.highlightColor;
+        highlightOverlay.style.border = config.highlightBorder;
+        highlightOverlay.style.zIndex = '10000';
+        highlightOverlay.style.display = 'none';
+        this.HighlightOverlay = highlightOverlay;
+        document.body.appendChild(this.HighlightOverlay)
     }
-
-    /**
-     * Remove selection tool from the page
-     * @returns {boolean} - Whether the tool was successfully removed
-     */
-    static deactivateSelection() {
-        if (!this.isSelectionActive) {
-            return false;
-        }
-
-        // Remove event listeners
-        this.selectionEventListeners.forEach(listener => {
-            document.removeEventListener(
-                listener.type,
-                listener.handler,
-                listener.capture
-            );
-        });
-
-        // Remove overlay
-        if (this.highlightOverlay && this.highlightOverlay.parentNode) {
-            this.highlightOverlay.parentNode.removeChild(this.highlightOverlay);
-        }
-
-        this.highlightOverlay = null;
-        this.selectionEventListeners = [];
-        this.selectedElement = null;
-        this.isSelectionActive = false;
-        this.isSelectionLocked = false;
-        return true;
+    
+    static showHighlightOverlay (element) {
+        const rect = element.getBoundingClientRect();
+        this.HighlightOverlay.style.display = 'block';
+        this.HighlightOverlay.style.top = `${window.scrollY + rect.top}px`;
+        this.HighlightOverlay.style.left = `${window.scrollX + rect.left}px`;
+        this.HighlightOverlay.style.width = `${rect.width}px`;
+        this.HighlightOverlay.style.height = `${rect.height}px`;
     }
-
-    /**
-     * Print the currently selected element
-     * @returns {Promise<boolean>} - Success status
-     */
-    static async printSelectedElement() {
-        if (!this.selectedElement) {
-            console.error('No element selected for printing.');
-            return false;
+    
+    static hideHighlightOverlay () {
+        this.HighlightOverlay.style.display = 'none';
+    }
+    
+    static removeHighlightOverlay () {
+        if (this.HighlightOverlay && this.HighlightOverlay.parentNode) {
+            this.HighlightOverlay.parentNode.removeChild(this.HighlightOverlay);
+            this.HighlightOverlay = null;
+        }
+    }
+    
+    static subscribeToSelectionEvents () {
+        if (!this.IsSelectionActive) {
+            return;
         }
 
-        return await this.printElementContent(this.selectedElement.outerHTML);
+        document.addEventListener('mouseover', (event) => {
+            if (this.IsSelectionLocked || event.target === document.body || event.target === document.documentElement) {
+                return;
+            }
+            this.showHighlightOverlay(event.target);
+        }, true);
+
+        document.addEventListener('mouseout', () => {
+            if (this.IsSelectionLocked) {
+                return;
+            }
+            this.hideHighlightOverlay();
+        }, true);
+
+        document.addEventListener('click', (event) => {
+            if (this.IsSelectionLocked || event.target === document.body || event.target === document.documentElement) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.lockSelection(event.target);
+            this.showHighlightOverlay(event.target);
+
+            return false;
+        }, true);
+    }
+    
+    static unsubscribeFromSelectionEvents () {
+        if (!this.IsSelectionActive) {
+            return;
+        }
+
+        document.removeEventListener('mouseover', this.showHighlightOverlay, true);
+        document.removeEventListener('mouseout', this.hideHighlightOverlay, true);
+        document.removeEventListener('click', this.lockSelection, true);
+
+        this.hideHighlightOverlay();
     }
 }
 
 window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
-window.GizmoWebJSInterop.Printer = Printer;
+(async function() {
+    try {
+        await PrinterUtils.loadHtml2Canvas();
+        console.log('html2canvas loaded successfully');
+    } catch (error) {
+        console.error('Failed to preload html2canvas. Printing functionality will not work. ', error);
+    } finally {
+        window.GizmoWebJSInterop.Printer = Printer;
+    }
+})();
