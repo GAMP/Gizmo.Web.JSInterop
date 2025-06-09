@@ -90,16 +90,13 @@
             return false;
         }
 
-        const defaultOptions = {
-            highlightColor: 'rgba(255, 193, 7, 0.3)',
-            highlightBorder: '2px dashed #ffc107'
-        };
-
-        PrinterUtils.createHighlightOverlay({...defaultOptions, ...options});
+        PrinterUtils.createHighlightOverlay(options);
         PrinterUtils.subscribeToSelectionEvents();
 
         PrinterUtils.IsSelectionActive = true;
         PrinterUtils.IsSelectionLocked = false;
+        
+        console.log(`Selection tool activated. IsSelectionActive: ${PrinterUtils.IsSelectionActive}, IsSelectionLocked: ${PrinterUtils.IsSelectionLocked}`);
 
         return true;
     }
@@ -116,6 +113,8 @@
         PrinterUtils.unsubscribeFromSelectionEvents();
         PrinterUtils.removeHighlightOverlay();
         PrinterUtils.unlockSelection();
+        
+        console.log(`Selection tool deactivated. IsSelectionActive: ${PrinterUtils.IsSelectionActive}, IsSelectionLocked: ${PrinterUtils.IsSelectionLocked}`);
 
         return true;
     }
@@ -131,6 +130,7 @@
             return false;
         }
 
+        console.log(`Printing selected element: ${PrinterUtils.SelectedElement.tagName}`);
         return await PrinterUtils.printElement(PrinterUtils.SelectedElement);
     }
 }
@@ -310,19 +310,25 @@ class PrinterUtils {
         this.IsSelectionLocked = false;
         this.IsSelectionActive = false;
         this.SelectedElement = null;
+        this.HighlightOverlay = null;
     }
 
     static createHighlightOverlay(config) {
 
-        const highlightOverlay = document.createElement('div');
-        highlightOverlay.style.position = 'absolute';
-        highlightOverlay.style.pointerEvents = 'none';
-        highlightOverlay.style.backgroundColor = config.highlightColor;
-        highlightOverlay.style.border = config.highlightBorder;
-        highlightOverlay.style.zIndex = '10000';
-        highlightOverlay.style.display = 'none';
-        this.HighlightOverlay = highlightOverlay;
+        if (!config.highlightColor)
+            config.highlightColor = 'rgba(255, 193, 7, 0.3)';
+        if (!config.highlightBorder)
+            config.highlightBorder = '2px dashed #ffc107';
+        
+        this.HighlightOverlay = document.createElement('div');
+        this.HighlightOverlay.style.position = 'absolute';
+        this.HighlightOverlay.style.pointerEvents = 'none';
+        this.HighlightOverlay.style.backgroundColor = config.highlightColor;
+        this.HighlightOverlay.style.border = config.highlightBorder;
+        this.HighlightOverlay.style.zIndex = '10000';
+        this.HighlightOverlay.style.display = 'none';
         document.body.appendChild(this.HighlightOverlay)
+        console.log(`Highlight overlay created with color: ${config.highlightColor} and border: ${config.highlightBorder}`);
     }
 
     static showHighlightOverlay(element) {
@@ -332,6 +338,7 @@ class PrinterUtils {
         this.HighlightOverlay.style.left = `${window.scrollX + rect.left}px`;
         this.HighlightOverlay.style.width = `${rect.width}px`;
         this.HighlightOverlay.style.height = `${rect.height}px`;
+        console.log(`Highlight overlay shown for element: ${element.tagName} at (${rect.left}, ${rect.top}) with size (${rect.width}x${rect.height})`);
     }
 
     static hideHighlightOverlay() {
@@ -355,6 +362,7 @@ class PrinterUtils {
                 return;
             }
             this.showHighlightOverlay(event.target);
+            console.log(`Highlight overlay shown for element: ${event.target.tagName} at (${event.clientX}, ${event.clientY})`);
         }, true);
 
         document.addEventListener('mouseout', () => {
@@ -362,6 +370,7 @@ class PrinterUtils {
                 return;
             }
             this.hideHighlightOverlay();
+            console.log('Highlight overlay hidden');
         }, true);
 
         document.addEventListener('click', (event) => {
@@ -373,8 +382,9 @@ class PrinterUtils {
             event.stopPropagation();
 
             this.lockSelection(event.target);
-            this.showHighlightOverlay(event.target);
-
+            this.showHighlightOverlay(this.SelectedElement);
+            console.log(`Selection locked for element: ${this.SelectedElement.tagName} at (${event.clientX}, ${event.clientY})`);
+            
             return false;
         }, true);
     }
@@ -401,5 +411,6 @@ window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
         console.error('Failed to preload html2canvas. Printing functionality will not work. ', error);
     } finally {
         window.GizmoWebJSInterop.Printer = Printer;
+        console.log('GizmoWebJSInterop.Printer initialized');
     }
 })();
