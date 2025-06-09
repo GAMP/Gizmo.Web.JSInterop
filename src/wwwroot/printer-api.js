@@ -29,7 +29,7 @@
                 console.error('Invalid printing element reference.');
                 return false;
             }
-            
+
             return await PrinterUtils.printElement(element);
         } catch (error) {
             console.error('Error printing element by reference:', error);
@@ -62,13 +62,16 @@
 
             try {
                 const imgUrl = await PrinterUtils.createImgUrl(element);
-                return await PrinterUtils.printImage(imgUrl);
-            } catch (error) {
-                console.error('Error converting HTML to image:', error);
-            } finally {
-                if( document.body.contains(element)) {
+                if (document.body.contains(element)) {
                     document.body.removeChild(element);
                 }
+                return await PrinterUtils.printImage(imgUrl);
+            } catch (error) {
+                if (document.body.contains(element)) {
+                    document.body.removeChild(element);
+                }
+                console.error('Error converting HTML to image:', error);
+                return false;
             }
         } catch (error) {
             console.error('Error preparing content for print:', error);
@@ -97,7 +100,7 @@
 
         PrinterUtils.IsSelectionActive = true;
         PrinterUtils.IsSelectionLocked = false;
-        
+
         return true;
     }
 
@@ -113,7 +116,7 @@
         PrinterUtils.unsubscribeFromSelectionEvents();
         PrinterUtils.removeHighlightOverlay();
         PrinterUtils.unlockSelection();
-        
+
         return true;
     }
 
@@ -121,7 +124,8 @@
      * Print the currently selected element as an image
      * @returns {Promise<boolean>} - Success status
      */
-    static async PrintSelectedElement() {
+    static
+    async PrintSelectedElement() {
         if (!PrinterUtils.SelectedElement) {
             console.error('No element selected for printing.');
             return false;
@@ -136,7 +140,7 @@ class PrinterUtils {
     static IsSelectionLocked = false;
     static SelectedElement = null;
     static HighlightOverlay = null;
-    
+
     static loadHtml2Canvas() {
         return new Promise((resolve, reject) => {
             if (typeof html2canvas !== 'undefined') {
@@ -300,16 +304,16 @@ class PrinterUtils {
 
     /**
      * Unlock the current selection, allowing selection of new elements
-     * @returns {void} 
+     * @returns {void}
      */
     static unlockSelection() {
         this.IsSelectionLocked = false;
         this.IsSelectionActive = false;
         this.SelectedElement = null;
     }
-    
-    static createHighlightOverlay (config) {
-        
+
+    static createHighlightOverlay(config) {
+
         const highlightOverlay = document.createElement('div');
         highlightOverlay.style.position = 'absolute';
         highlightOverlay.style.pointerEvents = 'none';
@@ -320,8 +324,8 @@ class PrinterUtils {
         this.HighlightOverlay = highlightOverlay;
         document.body.appendChild(this.HighlightOverlay)
     }
-    
-    static showHighlightOverlay (element) {
+
+    static showHighlightOverlay(element) {
         const rect = element.getBoundingClientRect();
         this.HighlightOverlay.style.display = 'block';
         this.HighlightOverlay.style.top = `${window.scrollY + rect.top}px`;
@@ -329,19 +333,19 @@ class PrinterUtils {
         this.HighlightOverlay.style.width = `${rect.width}px`;
         this.HighlightOverlay.style.height = `${rect.height}px`;
     }
-    
-    static hideHighlightOverlay () {
+
+    static hideHighlightOverlay() {
         this.HighlightOverlay.style.display = 'none';
     }
-    
-    static removeHighlightOverlay () {
+
+    static removeHighlightOverlay() {
         if (this.HighlightOverlay && this.HighlightOverlay.parentNode) {
             this.HighlightOverlay.parentNode.removeChild(this.HighlightOverlay);
             this.HighlightOverlay = null;
         }
     }
-    
-    static subscribeToSelectionEvents () {
+
+    static subscribeToSelectionEvents() {
         if (!this.IsSelectionActive) {
             return;
         }
@@ -374,8 +378,8 @@ class PrinterUtils {
             return false;
         }, true);
     }
-    
-    static unsubscribeFromSelectionEvents () {
+
+    static unsubscribeFromSelectionEvents() {
         if (!this.IsSelectionActive) {
             return;
         }
@@ -389,7 +393,7 @@ class PrinterUtils {
 }
 
 window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
-(async function() {
+(async function () {
     try {
         await PrinterUtils.loadHtml2Canvas();
         console.log('html2canvas loaded successfully');
