@@ -91,12 +91,11 @@
         }
 
         PrinterUtils.createHighlightOverlay(options);
-        PrinterUtils.subscribeToSelectionEvents();
 
         PrinterUtils.IsSelectionActive = true;
         PrinterUtils.IsSelectionLocked = false;
-        
-        console.log(`Selection tool activated. IsSelectionActive: ${PrinterUtils.IsSelectionActive}, IsSelectionLocked: ${PrinterUtils.IsSelectionLocked}`);
+
+        PrinterUtils.subscribeToSelectionEvents();
 
         return true;
     }
@@ -113,8 +112,6 @@
         PrinterUtils.unsubscribeFromSelectionEvents();
         PrinterUtils.removeHighlightOverlay();
         PrinterUtils.unlockSelection();
-        
-        console.log(`Selection tool deactivated. IsSelectionActive: ${PrinterUtils.IsSelectionActive}, IsSelectionLocked: ${PrinterUtils.IsSelectionLocked}`);
 
         return true;
     }
@@ -123,23 +120,26 @@
      * Print the currently selected element as an image
      * @returns {Promise<boolean>} - Success status
      */
-    static
-    async PrintSelectedElement() {
+    static async PrintSelectedElement() {
         if (!PrinterUtils.SelectedElement) {
             console.error('No element selected for printing.');
             return false;
         }
 
-        console.log(`Printing selected element: ${PrinterUtils.SelectedElement.tagName}`);
         return await PrinterUtils.printElement(PrinterUtils.SelectedElement);
     }
 }
 
 class PrinterUtils {
+    
     static IsSelectionActive = false;
     static IsSelectionLocked = false;
     static SelectedElement = null;
-    static HighlightOverlay = null;
+    
+    static _highlightOverlay = null;
+    static _mouseoverHandler = null;
+    static _mouseoutHandler = null;
+    static _clickHandler = null;
 
     static loadHtml2Canvas() {
         return new Promise((resolve, reject) => {
@@ -310,45 +310,54 @@ class PrinterUtils {
         this.IsSelectionLocked = false;
         this.IsSelectionActive = false;
         this.SelectedElement = null;
-        this.HighlightOverlay = null;
+        this._highlightOverlay = null;
     }
 
     static createHighlightOverlay(config) {
-
         if (!config.highlightColor)
             config.highlightColor = 'rgba(255, 193, 7, 0.3)';
         if (!config.highlightBorder)
             config.highlightBorder = '2px dashed #ffc107';
-        
-        this.HighlightOverlay = document.createElement('div');
-        this.HighlightOverlay.style.position = 'absolute';
-        this.HighlightOverlay.style.pointerEvents = 'none';
-        this.HighlightOverlay.style.backgroundColor = config.highlightColor;
-        this.HighlightOverlay.style.border = config.highlightBorder;
-        this.HighlightOverlay.style.zIndex = '10000';
-        this.HighlightOverlay.style.display = 'none';
-        document.body.appendChild(this.HighlightOverlay)
-        console.log(`Highlight overlay created with color: ${config.highlightColor} and border: ${config.highlightBorder}`);
+
+        this.removeHighlightOverlay();
+
+        this._highlightOverlay = document.createElement('div');
+        this._highlightOverlay.style.position = 'absolute';
+        this._highlightOverlay.style.pointerEvents = 'none';
+        this._highlightOverlay.style.backgroundColor = config.highlightColor;
+        this._highlightOverlay.style.border = config.highlightBorder;
+        this._highlightOverlay.style.zIndex = '10000';
+        this._highlightOverlay.style.display = 'none';
+        document.body.appendChild(this._highlightOverlay);
     }
 
     static showHighlightOverlay(element) {
-        const rect = element.getBoundingClientRect();
-        this.HighlightOverlay.style.display = 'block';
-        this.HighlightOverlay.style.top = `${window.scrollY + rect.top}px`;
-        this.HighlightOverlay.style.left = `${window.scrollX + rect.left}px`;
-        this.HighlightOverlay.style.width = `${rect.width}px`;
-        this.HighlightOverlay.style.height = `${rect.height}px`;
-        console.log(`Highlight overlay shown for element: ${element.tagName} at (${rect.left}, ${rect.top}) with size (${rect.width}x${rect.height})`);
+        if (!this._highlightOverlay || !element) {
+            console.warn('Cannot show highlight: overlay or element is null');
+            return;
+        }
+
+        try {
+            const rect = element.getBoundingClientRect();
+            this._highlightOverlay.style.display = 'block';
+            this._highlightOverlay.style.top = `${window.scrollY + rect.top}px`;
+            this._highlightOverlay.style.left = `${window.scrollX + rect.left}px`;
+            this._highlightOverlay.style.width = `${rect.width}px`;
+            this._highlightOverlay.style.height = `${rect.height}px`;
+        } catch (error) {
+            console.error('Error showing highlight overlay:', error);
+            this.hideHighlightOverlay();
+        }
     }
 
     static hideHighlightOverlay() {
-        this.HighlightOverlay.style.display = 'none';
+        this._highlightOverlay.style.display = 'none';
     }
 
     static removeHighlightOverlay() {
-        if (this.HighlightOverlay && this.HighlightOverlay.parentNode) {
-            this.HighlightOverlay.parentNode.removeChild(this.HighlightOverlay);
-            this.HighlightOverlay = null;
+        if (this._highlightOverlay && this._highlightOverlay.parentNode) {
+            this._highlightOverlay.parentNode.removeChild(this._highlightOverlay);
+            this._highlightOverlay = null;
         }
     }
 
@@ -357,48 +366,88 @@ class PrinterUtils {
             return;
         }
 
-        document.addEventListener('mouseover', (event) => {
-            if (this.IsSelectionLocked || event.target === document.body || event.target === document.documentElement) {
-                return;
+        this._mouseoverHandler = (event) => {
+            try {
+                if (this.IsSelectionLocked ||
+                    !event.target ||
+                    event.target === document.body ||
+                    event.target === document.documentElement) {
+                    return;
+                }
+
+                this.showHighlightOverlay(event.target);
+            } catch (error) {
+                console.error('Error in mouseover handler:', error);
             }
-            this.showHighlightOverlay(event.target);
-            console.log(`Highlight overlay shown for element: ${event.target.tagName} at (${event.clientX}, ${event.clientY})`);
-        }, true);
+        };
 
-        document.addEventListener('mouseout', () => {
-            if (this.IsSelectionLocked) {
-                return;
+        this._mouseoutHandler = (_) => {
+            try {
+                if (this.IsSelectionLocked) {
+                    return;
+                }
+                this.hideHighlightOverlay();
+            } catch (error) {
+                console.error('Error in mouseout handler:', error);
             }
-            this.hideHighlightOverlay();
-            console.log('Highlight overlay hidden');
-        }, true);
+        };
 
-        document.addEventListener('click', (event) => {
-            if (this.IsSelectionLocked || event.target === document.body || event.target === document.documentElement) {
-                return;
+        this._clickHandler = (event) => {
+            try {
+                if (this.IsSelectionLocked ||
+                    !event.target ||
+                    event.target === document.body ||
+                    event.target === document.documentElement) {
+                    return;
+                }
+
+                if (event.target.tagName === 'A' ||
+                    event.target.tagName === 'BUTTON' ||
+                    event.target.tagName === 'INPUT') {
+                    event.preventDefault();
+                }
+
+                event.stopPropagation();
+                this.lockSelection(event.target);
+                this.showHighlightOverlay(this.SelectedElement);
+            } catch (error) {
+                console.error('Error in click handler:', error);
             }
+        };
 
-            event.preventDefault();
-            event.stopPropagation();
-
-            this.lockSelection(event.target);
-            this.showHighlightOverlay(this.SelectedElement);
-            console.log(`Selection locked for element: ${this.SelectedElement.tagName} at (${event.clientX}, ${event.clientY})`);
-            
-            return false;
-        }, true);
+        try {
+            document.addEventListener('mouseover', this._mouseoverHandler, true);
+            document.addEventListener('mouseout', this._mouseoutHandler, true);
+            document.addEventListener('click', this._clickHandler, true);
+        } catch (error) {
+            console.error('Error registering event listeners:', error);
+            this.unsubscribeFromSelectionEvents();
+            this.removeHighlightOverlay();
+            this.unlockSelection();
+        }
     }
 
     static unsubscribeFromSelectionEvents() {
-        if (!this.IsSelectionActive) {
-            return;
+        try {
+            if (this._mouseoverHandler) {
+                document.removeEventListener('mouseover', this._mouseoverHandler, true);
+                this._mouseoverHandler = null;
+            }
+
+            if (this._mouseoutHandler) {
+                document.removeEventListener('mouseout', this._mouseoutHandler, true);
+                this._mouseoutHandler = null;
+            }
+
+            if (this._clickHandler) {
+                document.removeEventListener('click', this._clickHandler, true);
+                this._clickHandler = null;
+            }
+
+            this.hideHighlightOverlay();
+        } catch (error) {
+            console.error('Error removing event listeners:', error);
         }
-
-        document.removeEventListener('mouseover', this.showHighlightOverlay, true);
-        document.removeEventListener('mouseout', this.hideHighlightOverlay, true);
-        document.removeEventListener('click', this.lockSelection, true);
-
-        this.hideHighlightOverlay();
     }
 }
 
@@ -406,11 +455,9 @@ window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
 (async function () {
     try {
         await PrinterUtils.loadHtml2Canvas();
-        console.log('html2canvas loaded successfully');
     } catch (error) {
         console.error('Failed to preload html2canvas. Printing functionality will not work. ', error);
     } finally {
         window.GizmoWebJSInterop.Printer = Printer;
-        console.log('GizmoWebJSInterop.Printer initialized');
     }
 })();
