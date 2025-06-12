@@ -8,11 +8,11 @@
     
     <!-- NuGet Package Metadata -->
     <PackageId>Gizmo.Web.JSInterop</PackageId>
-    <Version>1.0.1</Version>
-    <Authors>Gizmo Team</Authors>
-    <Company>Gizmo</Company>
+    <Version>2.0.0-preview</Version>
+    <Authors>Gizmo</Authors>
+    <Company>Gizmo</Company>    
     <Description>JavaScript interop library for Blazor applications providing javascript API</Description>
-    <PackageTags>blazor;jsinterop;clipboard</PackageTags>
+    <PackageTags>blazor;jsinterop;clipboard;print</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/GAMP/Gizmo.Web.JSInterop</RepositoryUrl>
