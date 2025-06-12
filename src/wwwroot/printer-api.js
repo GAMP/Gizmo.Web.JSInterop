@@ -131,26 +131,32 @@
 }
 
 class PrinterUtils {
-    
+
     static IsSelectionActive = false;
     static IsSelectionLocked = false;
     static SelectedElement = null;
-    
+
     static _highlightOverlay = null;
     static _mouseoverHandler = null;
     static _mouseoutHandler = null;
     static _clickHandler = null;
 
-    static loadHtml2Canvas() {
+    static loadScript(src) {
         return new Promise((resolve, reject) => {
-            if (typeof html2canvas !== 'undefined') {
-                resolve();
-            } else {
+            if (!document.querySelector(`script[src="${src}"]`)) {
                 const script = document.createElement('script');
-                script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+                script.src = src;
+                script.type = 'text/javascript';
+                script.async = true;
+                script.defer = true;
                 script.onload = resolve;
-                script.onerror = () => reject(new Error('Failed to load html2canvas'));
+                script.onerror = (event) => {
+                    const error = event.error || event.message || event;
+                    reject(new Error(`[${src}] Failed to load. Error: ${error}`));
+                };
                 document.head.appendChild(script);
+            } else {
+                resolve();
             }
         });
     }
@@ -451,13 +457,14 @@ class PrinterUtils {
     }
 }
 
+
 window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
+window.GizmoWebJSInterop.Printer = Printer;
+
 (async function () {
     try {
-        await PrinterUtils.loadHtml2Canvas();
+        await PrinterUtils.loadScript('_content/Gizmo.Web.JSInterop/lib/html2canvas.min.js');
     } catch (error) {
-        console.error('Failed to preload html2canvas. Printing functionality will not work. ', error);
-    } finally {
-        window.GizmoWebJSInterop.Printer = Printer;
+        console.error(error);
     }
 })();
