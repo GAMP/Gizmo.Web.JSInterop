@@ -6,8 +6,27 @@ class Clipboard {
      * @returns {Promise<boolean>} True if clipboard read permission is granted or can be prompted
      */
     static async CanRead() {
-        const result = await navigator.permissions.query({name: 'clipboard-read'});
-        return result.state === 'granted' || result.state === 'prompt';
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+            return false;
+        }
+
+        if (!navigator.permissions || !navigator.permissions.query) {
+            return true;
+        }
+
+        try {
+            const result = await navigator.permissions.query({name: 'clipboard-read'});
+
+            if (result.state === 'denied') {
+                return false;
+            }
+
+            return result.state === 'granted' || result.state === 'prompt';
+        } catch {
+            // Some browsers reject this permission name (e.g. Firefox).
+            // Let ReadText() perform the actual read and raise browser-specific errors if denied.
+            return true;
+        }
     }
 
     /**
@@ -15,13 +34,26 @@ class Clipboard {
      * @returns {Promise<boolean>} True if clipboard write permission is granted or can be prompted
      */
     static async CanWrite() {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) {
+            return false;
+        }
+
+        if (!navigator.permissions || !navigator.permissions.query) {
+            return true;
+        }
+
         try {
             const result = await navigator.permissions.query({name: 'clipboard-write'});
+
+            if (result.state === 'denied') {
+                return false;
+            }
+
             return result.state === 'granted' || result.state === 'prompt';
         } catch {
-            // Some browsers don't support permission querying for clipboard
-            // Fall back to checking if clipboard API is available
-            return !!navigator.clipboard;
+            // Some browsers reject this permission name.
+            // Let WriteText() perform the actual write and raise browser-specific errors if denied.
+            return true;
         }
     }
 
@@ -85,6 +117,5 @@ class Clipboard {
     }
 }
 
-window.GizmoWebJSInterop = class GizmoWebJSInterop {
-    static Clipboard = Clipboard;
-};
+window.GizmoWebJSInterop = window.GizmoWebJSInterop || {};
+window.GizmoWebJSInterop.Clipboard = Clipboard;
