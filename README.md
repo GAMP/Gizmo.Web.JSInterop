@@ -211,9 +211,9 @@ The Printer API captures the target element with the bundled `html2canvas`, conv
 
 ## Publishing
 
-`.github/workflows/package.yml` is the caller copy of the canonical Gizmo.Infra NuGet procedure; follow [`docs/caller.md`](https://github.com/GAMP/Gizmo.Infra/blob/ee6fbd96adbcfba997755376a2c227f536c210d7/docs/caller.md) for prerequisites, routing, and version rules.
+`.github/workflows/package.yml` is the caller copy of the canonical Gizmo.Infra NuGet procedure; follow [`docs/caller.md`](https://github.com/GAMP/Gizmo.Infra/blob/4cf658f3ae09069730cefc7232cacd12a52bd1da/docs/caller.md) for prerequisites, routing, and version rules.
 
-Merging into `pre-release` publishes a `2.0.0-dev.N` prerelease to NuGet.org, so the merge is a real publication and not only a build; the stable `2.0.0` package comes from a merge into `release`.
+Merging into `pre-release` publishes a `2.0.0-preview.N` prerelease to NuGet.org, so the merge is a real publication and not only a build; the stable `2.0.0` package comes from a merge into `release`.
 
 ## Third-party notices
 
