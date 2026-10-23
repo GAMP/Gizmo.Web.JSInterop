@@ -6,9 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     
-    <!-- NuGet Package Metadata -->
     <PackageId>Gizmo.Web.JSInterop</PackageId>
-    <Version>1.0.2</Version>
+    <Version>2.0</Version>
     <Authors>Gizmo Team</Authors>
     <Company>Gizmo</Company>
     <Description>JavaScript interop library for Blazor applications providing javascript API</Description>
@@ -18,7 +17,6 @@
     <RepositoryUrl>https://github.com/GAMP/Gizmo.Web.JSInterop</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     
-    <!-- XML Documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>

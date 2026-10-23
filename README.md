@@ -15,6 +15,16 @@ Add a reference to the Gizmo.Web.JSInterop package in your Blazor project:
 dotnet add package Gizmo.Web.JSInterop
 ```
 
+## Asset setup
+
+The library ships its JavaScript as static web assets under `_content/Gizmo.Web.JSInterop/`. Register the script in your host page (`index.html`, `_Host.cshtml`, or `App.razor`) before the first interop call:
+
+```html
+<script src="_content/Gizmo.Web.JSInterop/clipboard-api.js"></script>
+```
+
+The minified file (`clipboard-api.min.js`) exposes the same namespace.
+
 ## Features
 
 ### Clipboard API
@@ -33,7 +43,6 @@ dotnet add package Gizmo.Web.JSInterop
   
 - **Advanced Operations**
   - Write multiple formats (text and image) simultaneously
-
 
 ### Usage Examples
 
@@ -99,3 +108,13 @@ The Clipboard API relies on the browser's implementation of the Clipboard API. F
 - User permissions and browser settings
 
 Most modern browsers (Chrome, Edge, Firefox, Safari) support the core clipboard functionality, but permission handling may differ between implementations.
+
+## Publishing
+
+`.github/workflows/package.yml` is the caller copy of the canonical Gizmo.Infra NuGet procedure; follow [`docs/caller.md`](https://github.com/GAMP/Gizmo.Infra/blob/4cf658f3ae09069730cefc7232cacd12a52bd1da/docs/caller.md) for prerequisites, routing, and version rules.
+
+Merging into `pre-release` publishes a `2.0.0-preview.N` prerelease to NuGet.org, so the merge is a real publication and not only a build; the stable `2.0.0` package comes from a merge into `release`.
+
+## License
+
+MIT License. See the `LICENSE` file in the repository root.
