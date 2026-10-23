@@ -11,7 +11,7 @@
     <Authors>Gizmo Team</Authors>
     <Company>Gizmo</Company>
     <Description>JavaScript interop library for Blazor applications providing javascript API</Description>
-    <PackageTags>blazor;jsinterop;clipboard;print</PackageTags>
+    <PackageTags>blazor;jsinterop;clipboard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/GAMP/Gizmo.Web.JSInterop</RepositoryUrl>
